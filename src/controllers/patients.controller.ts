@@ -25,8 +25,7 @@ export async function get(
   next: NextFunction
 ): Promise<void> {
   try {
-    const id = parseInt(req.params.id, 10);
-    res.status(200).json(await getPatient(id));
+    res.status(200).json(await getPatient(req.params.id));
   } catch (error) {
     next(error);
   }
@@ -50,8 +49,7 @@ export async function update(
   next: NextFunction
 ): Promise<void> {
   try {
-    const id = parseInt(req.params.id, 10);
-    res.status(200).json(await updatePatient(id, req.body));
+    res.status(200).json(await updatePatient(req.params.id, req.body));
   } catch (error) {
     next(error);
   }
@@ -63,9 +61,7 @@ export async function remove(
   next: NextFunction
 ): Promise<void> {
   try {
-    const id = parseInt(req.params.id, 10);
-    await removePatient(id);
-    res.status(204).send();
+    res.status(200).json(await removePatient(req.params.id));
   } catch (error) {
     next(error);
   }

@@ -1,78 +1,84 @@
 import { Patient } from "../types/patient";
 import { NotFoundError } from "../types/error";
-
-// dummy data
-const patients: Patient[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    dateOfBirth: "1991-01-01",
-    medicalCondition: "Healthy",
-    dateOfNextAppointment: "2023-12-01",
-  },
-  {
-    id: 2,
-    name: "Jane Doe",
-    dateOfBirth: "1996-01-01",
-    medicalCondition: "Healthy",
-    dateOfNextAppointment: "2023-12-01",
-  },
-];
+import { query } from "./db";
+import { mapDBPatientToPatient } from "../utils/mappers";
 
 export async function getPatients(): Promise<Patient[]> {
-  return patients;
+  const patients = await query("SELECT * FROM patients");
+  return patients.map(mapDBPatientToPatient);
 }
 
-export async function getPatient(id: number): Promise<Patient> {
-  const patient = patients.find((p) => p.id === id);
+// @TODO sanitize input
+export async function getPatient(id: string): Promise<Patient> {
+  const patient = (
+    await query("SELECT * FROM patients WHERE patient_id = $1", [id])
+  ).map(mapDBPatientToPatient)[0];
   if (!patient) {
     throw new NotFoundError("Patient not found");
   }
   return patient;
 }
 
+// @TODO sanitize input
 export async function createPatient(patient: Patient): Promise<Patient> {
   const { name, dateOfBirth, medicalCondition, dateOfNextAppointment } =
     patient;
-  // Creates an id (db would do this)
-  const id = patients.length + 1;
-  const newPatient: Patient = {
-    id,
-    name,
-    dateOfBirth,
-    medicalCondition,
-    dateOfNextAppointment,
-  };
-  patients.push(newPatient);
+  const newPatient = (
+    await query(
+      "INSERT INTO patients (patient_name, patient_dob, patient_condition, patient_next_app) VALUES ($1, $2, $3, $4) RETURNING *",
+      [name, dateOfBirth, medicalCondition, dateOfNextAppointment]
+    )
+  ).map(mapDBPatientToPatient)[0];
   return newPatient;
 }
 
 export async function updatePatient(
-  id: number,
+  id: string,
   patient: Patient
 ): Promise<Patient> {
   const { name, dateOfBirth, medicalCondition, dateOfNextAppointment } =
     patient;
-  const originalPatient = patients.find((p) => p.id === id);
+
+  const originalPatient = (
+    await query("SELECT * FROM patients WHERE patient_id = $1", [id])
+  ).map(mapDBPatientToPatient)[0];
   if (!originalPatient) {
     throw new NotFoundError("Patient not found");
   }
-  const updatedPatient = {
+
+  const patientNewFields = {
     ...originalPatient,
-    name,
-    dateOfBirth,
-    medicalCondition,
-    dateOfNextAppointment,
+    id,
+    name: name ?? originalPatient.name,
+    dateOfBirth: dateOfBirth ?? originalPatient.dateOfBirth,
+    medicalCondition: medicalCondition ?? originalPatient.medicalCondition,
+    dateOfNextAppointment:
+      dateOfNextAppointment ?? originalPatient.dateOfNextAppointment,
   };
-  patients[patients.findIndex((p) => p.id === originalPatient.id)] =
-    updatedPatient;
+  const updatedPatient = (
+    await query(
+      "UPDATE patients SET patient_name = $1, patient_dob = $2, patient_condition = $3, patient_next_app = $4 WHERE patient_id = $5 RETURNING *",
+      [
+        patientNewFields.name,
+        patientNewFields.dateOfBirth,
+        patientNewFields.medicalCondition,
+        patientNewFields.dateOfNextAppointment,
+        id,
+      ]
+    )
+  ).map(mapDBPatientToPatient)[0];
+
   return updatedPatient;
 }
 
-export async function removePatient(id: number): Promise<void> {
-  const index = patients.findIndex((p) => p.id === id);
-  if (index === -1) {
+export async function removePatient(id: string): Promise<Patient> {
+  const patient = (
+    await query("DELETE FROM patients WHERE patient_id = $1 RETURNING *", [id])
+  ).map(mapDBPatientToPatient)[0];
+
+  if (!patient) {
     throw new NotFoundError("Patient not found");
   }
-  patients.splice(index, 1);
+
+  return patient;
 }
