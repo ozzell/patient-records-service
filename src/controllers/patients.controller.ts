@@ -4,6 +4,7 @@ import {
   getPatient,
   getPatients,
   removePatient,
+  searchPatients,
   updatePatient,
 } from "../services/patients.service";
 
@@ -62,6 +63,19 @@ export async function remove(
 ): Promise<void> {
   try {
     res.status(200).json(await removePatient(req.params.id));
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function search(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const query = typeof req.query.s === "string" ? req.query.s : "";
+    res.status(200).json(await searchPatients(query));
   } catch (error) {
     next(error);
   }

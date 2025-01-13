@@ -32,6 +32,7 @@ export async function createPatient(patient: Patient): Promise<Patient> {
   return newPatient;
 }
 
+// @TODO sanitize input
 export async function updatePatient(
   id: string,
   patient: Patient
@@ -71,6 +72,7 @@ export async function updatePatient(
   return updatedPatient;
 }
 
+// @TODO sanitize input
 export async function removePatient(id: string): Promise<Patient> {
   const patient = (
     await query("DELETE FROM patients WHERE patient_id = $1 RETURNING *", [id])
@@ -81,4 +83,19 @@ export async function removePatient(id: string): Promise<Patient> {
   }
 
   return patient;
+}
+
+// @TODO sanitize input
+export async function searchPatients(searchString: string): Promise<Patient[]> {
+  const patients = await query(
+    `
+    SELECT * FROM patients
+    WHERE patient_name ILIKE $1
+    OR patient_condition ILIKE $1
+    OR patient_dob::text ILIKE $1
+    OR patient_next_app::text ILIKE $1
+  `,
+    [`%${searchString}%`]
+  );
+  return patients.map(mapDBPatientToPatient);
 }

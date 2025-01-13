@@ -5,9 +5,12 @@ import {
   get,
   getAll,
   update,
+  search,
 } from "../controllers/patients.controller";
 
 const router = express.Router();
+
+router.get("/search", search);
 
 router.get("/", getAll);
 
