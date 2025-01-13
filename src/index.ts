@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import { errorLoggingMiddleware } from "./middlewares/logging";
 import patientRoutes from "./routes/patients.route";
@@ -8,6 +9,7 @@ dotenv.config();
 const app: Express = express();
 const port = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (req: Request, res: Response) => {
